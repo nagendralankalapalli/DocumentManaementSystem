@@ -5,12 +5,16 @@ import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.Reposatory.UserRepository;
 import com.example.Service.UserService;
+import com.example.ServiceImpl.CustomUserDetailsService;
+import com.example.config.JwtUtil;
 import com.example.dto.LoginRequestDto;
 import com.example.dto.LoginResponseDto;
 import com.example.dto.ResponseMessage;
@@ -28,48 +32,46 @@ public class UserRegistrationController {
 	private UserService userService;
 	@Autowired
 	private UserRepository userRepository;
+	 @Autowired
+	    private JwtUtil jwtUtil;
+	    @Autowired
+	    private AuthenticationManager authenticationManager;
+	  
+	    @Autowired
+	    private CustomUserDetailsService service;
 
-	@PostMapping(value = "/login")
-	public ResponseEntity<Object> userLogin(@RequestBody LoginRequestDto request) {
-		ResponseMessage responsemessage = new ResponseMessage();
-		User user = new User();
-		user = userRepository.findByEmailAndPassword(request.getEmail(), request.getPassword());
 
+	@PostMapping("/login")
+    public LoginResponseDto generateToken(@RequestBody LoginRequestDto request) throws Exception {
 		LoginResponseDto response = new LoginResponseDto();
-		if (user != null) {
-			if (user.getRollId() == 1) {
-				response.setCode(Constants.ADSS200);
-				response.setMessage("Login successfully As admin!!");
-				response.setEmployeeId(user.getEmployeeId());
-				response.setRoleId(user.getRollId());
-				response.setDesignation(user.getDesignation());
-				response.setUsername(user.getUserName());
-
-				return ResponseEntity.ok(response);
-
-			}
-			if (user.getRollId() > 1) {
-
-				response.setCode(Constants.ADSS200);
-				response.setMessage(Constants.LOGIN_SUCCESSFULL);
-				response.setEmployeeId(user.getEmployeeId());
-				response.setRoleId(user.getRollId());
-				response.setDesignation(user.getDesignation());
-				response.setUsername(user.getUserName());
-				
-				// response.setProjects(user.getProjects());
-				return ResponseEntity.ok(response);
-			}
-
-		} else {
-			responsemessage.setResponseCode(Constants.ADSS100);
-			responsemessage.setResponsemessage(Constants.USER_NOT_EXISTS);
-			return ResponseEntity.ok(responsemessage);
-		}
-		return ResponseEntity.ok(response);
-
+        
+        User	user = userRepository.findByEmailAndPassword(request.getEmail(), request.getPassword());
+        if(user!=null) {
+        	try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+            );
+        } catch (Exception ex) {
+            throw new Exception("inavalid username/password");
+        }
+        String token= jwtUtil.generateToken(request.getEmail());
+        response.setCode(Constants.ADSS200);
+		response.setMessage(Constants.LOGIN_SUCCESSFULL);
+		response.setToken(token);
+		response.setEmployeeId(user.getEmployeeId());
+		response.setRoleId(user.getRollId());
+		
+    }
+        else {
+        	 response.setCode(Constants.ADSS100);
+     		response.setMessage(Constants.USER_NOT_EXISTS);
+     		response.setToken(null);
+     		response.setEmployeeId(request.getEmail());
+     		
+        	
+        }
+		return response;
 	}
-
 	@PostMapping("/register")
 	public ResponseEntity<Object> registerUser(@RequestBody UserDto request) {
 

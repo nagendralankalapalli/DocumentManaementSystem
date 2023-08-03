@@ -8,10 +8,9 @@ import lombok.ToString;
 public class LoginResponseDto {
 	private String code;
 	private String message;
+	private String token;
 	private int roleId;
 	private String employeeId;
-	private String designation;
-	private String username;
-	private String createdBy;
+	
 	
 }
