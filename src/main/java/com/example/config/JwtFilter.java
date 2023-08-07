@@ -44,7 +44,7 @@ public class JwtFilter extends OncePerRequestFilter {
         if (userName != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
             UserDetails userDetails = service.loadUserByUsername(userName);
-
+            try {
             if (jwtUtil.validateToken(token, userDetails)) {
 
                 UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken =
@@ -52,7 +52,20 @@ public class JwtFilter extends OncePerRequestFilter {
                 usernamePasswordAuthenticationToken
                         .setDetails(new WebAuthenticationDetailsSource().buildDetails(httpServletRequest));
                 SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+            }else {
+                // Token is invalid or expired, return an error response
+                httpServletResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                httpServletResponse.setContentType("application/json");
+                httpServletResponse.getWriter().write("{\"error\": \"Invalid token\"}");
+                return;
             }
+        } catch (Exception e) {
+            // Handle other possible exceptions here
+            httpServletResponse.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            httpServletResponse.setContentType("application/json");
+            httpServletResponse.getWriter().write("{\"error\": \"Invalid token\"}");
+            return;
+        }
         }
         filterChain.doFilter(httpServletRequest, httpServletResponse);
     }

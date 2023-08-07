@@ -30,70 +30,19 @@ import com.example.util.Constants;
 public class UserRegistrationController {
 	@Autowired
 	private UserService userService;
-	@Autowired
-	private UserRepository userRepository;
-	 @Autowired
-	    private JwtUtil jwtUtil;
-	    @Autowired
-	    private AuthenticationManager authenticationManager;
-	  
-	    @Autowired
-	    private CustomUserDetailsService service;
+	
 
 
 	@PostMapping("/login")
     public LoginResponseDto generateToken(@RequestBody LoginRequestDto request) throws Exception {
-		LoginResponseDto response = new LoginResponseDto();
-        
-        User	user = userRepository.findByEmailAndPassword(request.getEmail(), request.getPassword());
-        if(user!=null) {
-        	try {
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-            );
-        } catch (Exception ex) {
-            throw new Exception("inavalid username/password");
-        }
-        String token= jwtUtil.generateToken(request.getEmail());
-        response.setCode(Constants.ADSS200);
-		response.setMessage(Constants.LOGIN_SUCCESSFULL);
-		response.setToken(token);
-		response.setEmployeeId(user.getEmployeeId());
-		response.setRoleId(user.getRollId());
 		
-    }
-        else {
-        	 response.setCode(Constants.ADSS100);
-     		response.setMessage(Constants.USER_NOT_EXISTS);
-     		response.setToken(null);
-     		response.setEmployeeId(request.getEmail());
-     		
-        	
-        }
-		return response;
+	return	userService.generateToken(request);
+       
 	}
 	@PostMapping("/register")
 	public ResponseEntity<Object> registerUser(@RequestBody UserDto request) {
-
-		User user = userRepository.getUserByEmail(request.getEmail());
-		User user1 = userRepository.getUserByEmployeeId(request.getEmployeeId());
-		UserResponse userresponse = new UserResponse();
+		
 		StatusDto responseDto = new StatusDto();
-		if (user != null) {
-			StatusDto response = new StatusDto();
-			response.setStatus(Constants.FAIL);
-			response.setCode(Constants.ADSS101);
-			response.setMessage(Constants.EMAIL_ALREADY_EXISTS);
-			return ResponseEntity.ok(response);
-		}
-		if (user1 != null) {
-			StatusDto response = new StatusDto();
-			response.setStatus(Constants.FAIL);
-			response.setCode(Constants.ADSS101);
-			response.setMessage(Constants.Employee_ALREADY_EXISTS);
-			return ResponseEntity.ok(response);
-
-		}
 
 		if (request.getUserName() == null || request.getUserName().equalsIgnoreCase("")
 				|| request.getUserName().equalsIgnoreCase(" ")) {
@@ -221,13 +170,10 @@ public class UserRegistrationController {
 		}
 		
 		else {
-			userService.userRegistration(request);
-			userresponse.setCode(Constants.ADSS200);
-			userresponse.setMessage(Constants.welcome_As_User);
-			userresponse.setEmail(request.getEmail());
-			userresponse.setRollId(request.getRollId());
-			return ResponseEntity.ok(userresponse);
+			return	userService.userRegistration(request);
+			
 		}
+		 
 	}
 	
 	
